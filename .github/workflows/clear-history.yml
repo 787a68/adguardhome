@@ -1,0 +1,49 @@
+name: Clear All Branch Histories Annually
+
+on:
+  schedule:
+    - cron: "0 0 1 1 *"  # 每年1月1日 00:00 UTC 自动触发
+  workflow_dispatch:    # 允许手动触发
+
+jobs:
+  clear-all-history:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 获取完整历史记录
+
+      - name: Setup Git Identity
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Get All Branches
+        id: get-branches
+        run: |
+          # 获取所有远程分支（剔除 HEAD 指向）
+          BRANCHES=$(git branch -r | grep -vE 'HEAD' | sed 's/origin\///')
+          echo "branches=$BRANCHES" >> "$GITHUB_ENV"
+
+      - name: Clear Commit History for Each Branch
+        run: |
+          for BRANCH in $branches; do
+            echo "正在清空分支: $BRANCH"
+            
+            # 创建新的 orphan 分支
+            git checkout --orphan tmp_reset
+            
+            # 添加所有文件到暂存区
+            git add -A
+            
+            # 创建新的孤立提交，提交信息中包含当前日期
+            git commit -m "Cleared commit history on $(date)"
+            
+            # 强制推送 orphan 提交到目标分支，覆盖原有历史
+            git push origin tmp_reset:"$BRANCH" --force
+            
+            # 切回原分支并删除临时分支
+            git checkout "$BRANCH"
+            git branch -D tmp_reset
+          done
