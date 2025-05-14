@@ -18,10 +18,14 @@ jobs:
 
       - name: Build upstreams file
         run: |
-          FILE="upstreams.txt"
-          > "$FILE"
+          #!/bin/bash
+          set -euo pipefail
           
-          # 有序规则数组，每个规则用 "|" 分隔 URL 和上游 DNS
+          upstreams_file="upstreams.txt"
+          # 写入默认上游 DNS
+          echo "h3://dns.tencentyun.com/dns-query" > "$upstreams_file"
+          
+          # 定义有序规则数组，格式为 URL|上游DNS
           ordered_rules=(
             "https://raw.githubusercontent.com/gfwlist/gfwlist/master/list.txt|h3://dns.google/dns-query"
             "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/alibaba.conf|h3://dns.alidns.com/dns-query"
@@ -30,75 +34,83 @@ jobs:
             "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/qihoo360.conf|tls://dot.360.cn"
           )
           
+          # 处理 gfwlist 文件的函数
+          process_gfwlist() {
+            local file_tmp="$1"
+            local upstream="$2"
+            while IFS= read -r line; do
+              line_clean=$(echo "$line" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+              # 跳过空行、注释或以 [ 开头的行
+              if [[ -z "$line_clean" || "$line_clean" == "!"* || "$line_clean" == "@"* || "$line_clean" =~ ^\[ ]]; then
+                continue
+              fi
+              if echo "$line_clean" | grep -qi "autoproxy"; then
+                continue
+              fi
+              # 去除前导符号 || 或 .
+              line_clean=$(echo "$line_clean" | sed -E 's/^(\|\||\.)//')
+              
+              if [[ "$line_clean" == http* ]]; then
+                domain=$(echo "$line_clean" | sed -E 's#^https?://##; s#/.*##')
+              elif [[ "$line_clean" == *"/"* ]]; then
+                domain=$(echo "$line_clean" | cut -d'/' -f1)
+              else
+                domain="$line_clean"
+              fi
+              domain=$(echo "$domain" | sed -E 's/(%2F)+$//Ig; s#/$##')
+              
+              # 跳过通配符、不包含点或是 IP 地址的规则
+              if [[ "$domain" == *"*"* || "$domain" != *.* || "$domain" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$ ]]; then
+                continue
+              fi
+              echo "[/${domain}/]${upstream}" >> "$upstreams_file"
+            done < "$file_tmp"
+          }
+          
+          # 处理其它规则文件的函数
+          process_other() {
+            local file_tmp="$1"
+            local upstream="$2"
+            grep -E '^(DOMAIN-SUFFIX|DOMAIN),' "$file_tmp" | while IFS= read -r line; do
+              raw=$(echo "$line" | sed -E 's/^(DOMAIN-SUFFIX|DOMAIN),//' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+              if [[ "$raw" == *"/"* ]]; then
+                dom=$(echo "$raw" | cut -d'/' -f1)
+              else
+                dom="$raw"
+              fi
+              if [[ "$dom" == *"ruleset.skk.moe"* || "$dom" == *"*"* || "$dom" != *.* || "$dom" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$ ]]; then
+                continue
+              fi
+              echo "[/${dom}/]${upstream}" >> "$upstreams_file"
+            done
+          }
+          
+          # 循环处理每个规则
           for rule in "${ordered_rules[@]}"; do
             url="${rule%%|*}"
             upstream="${rule#*|}"
             tmp=$(mktemp)
             echo "Downloading $url ..."
-            curl -s "$url" > "$tmp"
-            
-            if [[ "$url" == *"gfwlist"* ]]; then
-              while IFS= read -r line; do
-                line_clean=$(echo "$line" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-                if [[ -z "$line_clean" || "$line_clean" == "!"* || "$line_clean" == "@"* ]]; then
-                  continue
-                fi
-                if [[ "$line_clean" =~ ^\[ ]] || echo "$line_clean" | grep -qi "autoproxy"; then
-                  continue
-                fi
-                line_clean=$(echo "$line_clean" | sed -E 's/^(\|\||\.)//')
-                if [[ "$line_clean" == http* ]]; then
-                  domain=$(echo "$line_clean" | sed -E 's#^https?://##; s#/.*##')
-                elif [[ "$line_clean" == *"/"* ]]; then
-                  domain=$(echo "$line_clean" | cut -d'/' -f1)
-                else
-                  domain="$line_clean"
-                fi
-                domain=$(echo "$domain" | sed -E 's/(%2F)+$//Ig; s#/$##')
-                
-                # **过滤掉包含 `*` 的域名（AdGuard Home 不支持）**
-                if [[ "$domain" == *"*"* ]]; then
-                  continue
-                fi
-                if [[ "$domain" != *.* ]]; then
-                  continue
-                fi
-                if [[ "$domain" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$ ]]; then
-                  continue
-                fi
-                echo "[/${domain}/]${upstream}" >> "$FILE"
-              done < "$tmp"
-            else
-              grep -E '^(DOMAIN-SUFFIX|DOMAIN),' "$tmp" | while IFS= read -r l; do
-                raw=$(echo "$l" | sed -E 's/^(DOMAIN-SUFFIX|DOMAIN),//' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-                if [[ "$raw" == *"/"* ]]; then
-                  dom=$(echo "$raw" | cut -d'/' -f1)
-                else
-                  dom="$raw"
-                fi
-                if [[ "$dom" == *"ruleset.skk.moe"* ]]; then
-                  continue
-                fi
-                if [[ "$dom" == *"*"* ]]; then
-                  continue
-                fi
-                if [[ "$dom" != *.* ]]; then
-                  continue
-                fi
-                if [[ "$dom" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$ ]]; then
-                  continue
-                fi
-                echo "[/${dom}/]${upstream}" >> "$FILE"
-              done
+            if ! curl -fsSL "$url" -o "$tmp"; then
+              echo "Error: Failed to download $url" >&2
+              rm -f "$tmp"
+              continue
             fi
+            if [[ "$url" == *"gfwlist"* ]]; then
+              process_gfwlist "$tmp" "$upstream"
+            else
+              process_other "$tmp" "$upstream"
+            fi
+            rm -f "$tmp"
           done
           
-          sed -i '/^$/d' "$FILE"
-          awk '!seen[$0]++' "$FILE" > tmp && mv tmp "$FILE"
-          perl -pi -e 'chomp if eof' "$FILE"
+          # 清理空行，去重，并确保文件末尾没有多余的换行符
+          sed -i '/^$/d' "$upstreams_file"
+          awk '!seen[$0]++' "$upstreams_file" > tmp && mv tmp "$upstreams_file"
+          perl -pi -e 'chomp if eof' "$upstreams_file"
           
           echo "Final upstreams file:"
-          cat "$FILE"
+          cat "$upstreams_file"
 
       - name: Commit & Push
         run: |
