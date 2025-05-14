@@ -1,3 +1,4 @@
+h3://dns.tencentyun.com/dns-query
 [/blogjav.net/]h3://dns.google/dns-query
 [/zoominfo.com/]h3://dns.google/dns-query
 [/ptwxz.com/]h3://dns.google/dns-query
