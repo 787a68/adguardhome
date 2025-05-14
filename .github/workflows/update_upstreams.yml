@@ -23,7 +23,7 @@ jobs:
           
           upstreams_file="upstreams.txt"
           # 写入默认上游 DNS
-          echo "http://doh.pub/dns-query" > "$upstreams_file"
+          echo "https://doh.pub/dns-query" > "$upstreams_file"
           
           # 定义有序规则数组，格式为 URL|上游DNS
           ordered_rules=(
