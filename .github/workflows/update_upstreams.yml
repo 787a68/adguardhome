@@ -23,12 +23,12 @@ jobs:
           
           upstreams_file="upstreams.txt"
           # 写入默认上游 DNS
-          echo "h3://dns.tencentyun.com/dns-query" > "$upstreams_file"
+          echo "http://doh.pub/dns-query" > "$upstreams_file"
           
           # 定义有序规则数组，格式为 URL|上游DNS
           ordered_rules=(
             "https://raw.githubusercontent.com/gfwlist/gfwlist/master/list.txt|h3://dns.google/dns-query"
-            "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/alibaba.conf|h3://dns.alidns.com/dns-query"
+            "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/alibaba.conf|quic://label.alidns.com"
             "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/bytedance.conf|180.184.1.1"
             "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/baidu.conf|180.76.76.76"
             "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/qihoo360.conf|tls://dot.360.cn"
