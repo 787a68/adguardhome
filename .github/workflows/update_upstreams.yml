@@ -28,9 +28,9 @@ jobs:
           # 定义有序规则数组，格式为 URL|上游DNS
           ordered_rules=(
             "https://raw.githubusercontent.com/gfwlist/gfwlist/master/list.txt|h3://dns.google/dns-query"
-            "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/tencent.conf|tls://doh.pub"
-            "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/bilibili.conf|tls://doh.pub"
-            "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/xiaomi.conf|tls://doh.pub"
+            "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/tencent.conf|tls://dot.pub"
+            "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/bilibili.conf|tls://dot.pub"
+            "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/xiaomi.conf|tls://dot.pub"
             "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/alibaba.conf|quic://dns.alidns.com"
             "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/bytedance.conf|180.184.1.1"
             "https://ruleset.skk.moe/Modules/Rules/sukka_local_dns_mapping/baidu.conf|180.76.76.76"
