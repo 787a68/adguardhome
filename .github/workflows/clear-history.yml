@@ -22,28 +22,38 @@ jobs:
       - name: Get All Branches
         id: get-branches
         run: |
-          # 获取所有远程分支（剔除 HEAD 指向）
-          BRANCHES=$(git branch -r | grep -vE 'HEAD' | sed 's/origin\///')
-          echo "branches=$BRANCHES" >> "$GITHUB_ENV"
+          # 获取所有远程分支（排除 HEAD），并转换为 JSON 数组格式
+          BRANCHES=$(git branch -r | grep -vE 'HEAD' | sed 's|origin/||g' | jq -R -s 'split("\n") | map(select(length > 0))')
+          # 写入环境变量文件，确保后续步骤能读取到 BRANCHES
+          echo "BRANCHES=$BRANCHES" >> "$GITHUB_ENV"
 
       - name: Clear Commit History for Each Branch
         run: |
-          for BRANCH in $branches; do
-            echo "正在清空分支: $BRANCH"
+          # 遇到错误立即退出，防止后续命令执行
+          set -euo pipefail
+          
+          # 定义清空分支历史的函数，便于后续复用和逻辑清晰
+          clear_branch_history() {
+            local branch="$1"
+            echo "正在处理分支：$branch"
             
-            # 创建新的 orphan 分支
+            # 切换到目标分支，确保本地存在该分支
+            git checkout "$branch"
+            
+            # 创建一个新的孤立分支，工作区保留所有文件，但没有提交历史
             git checkout --orphan tmp_reset
-            
-            # 添加所有文件到暂存区
             git add -A
-            
-            # 创建新的孤立提交，提交信息中包含当前日期
             git commit -m "Cleared commit history on $(date)"
             
-            # 强制推送 orphan 提交到目标分支，覆盖原有历史
-            git push origin tmp_reset:"$BRANCH" --force
+            # 强制推送孤立提交，覆盖远程目标分支的历史
+            git push origin tmp_reset:"$branch" --force
             
-            # 切回原分支并删除临时分支
-            git checkout "$BRANCH"
+            # 切回目标分支，并删除临时的孤立分支
+            git checkout "$branch"
             git branch -D tmp_reset
+          }
+          
+          # 遍历 BRANCHES 环境变量中保存的 JSON 数组
+          echo "$BRANCHES" | jq -r '.[]' | while IFS= read -r branch; do
+            clear_branch_history "$branch"
           done
