@@ -76,7 +76,6 @@
 [/funkyimg.com/]h3://dns.google/dns-query
 [/fxnetworks.com/]h3://dns.google/dns-query
 [/g-area.org/]h3://dns.google/dns-query
-[/gettyimages.*/]h3://dns.google/dns-query
 [/getuploader.com/]h3://dns.google/dns-query
 [/ghidra-sre.org/]h3://dns.google/dns-query
 [/glass8.eu/]h3://dns.google/dns-query
@@ -97,7 +96,6 @@
 [/hulu.com/]h3://dns.google/dns-query
 [/huluim.com/]h3://dns.google/dns-query
 [/hybrid-analysis.com/]h3://dns.google/dns-query
-[/cdn*.i-scmp.com/]h3://dns.google/dns-query
 [/ilbe.com/]h3://dns.google/dns-query
 [/ilovelongtoes.com/]h3://dns.google/dns-query
 [/imlive.co/]h3://dns.google/dns-query
@@ -533,7 +531,6 @@
 [/now.im/]h3://dns.google/dns-query
 [/payments-jp.amazon.com/]h3://dns.google/dns-query
 [/amazon.co.jp/]h3://dns.google/dns-query
-[/s3-ap-*.amazonaws.com/]h3://dns.google/dns-query
 [/aolchannels.aol.com/]h3://dns.google/dns-query
 [/video.aol.ca/]h3://dns.google/dns-query
 [/video.aol.co.uk/]h3://dns.google/dns-query
@@ -1516,7 +1513,6 @@
 [/azerbaycan.tv/]h3://dns.google/dns-query
 [/azerimix.com/]h3://dns.google/dns-query
 [/azirevpn.com/]h3://dns.google/dns-query
-[/boxun*.azurewebsites.net/]h3://dns.google/dns-query
 [/bearteach.com/]h3://dns.google/dns-query
 [/btbtt.me/]h3://dns.google/dns-query
 [/btbtt.co/]h3://dns.google/dns-query
@@ -3042,7 +3038,6 @@
 [/m.hkgalden.com/]h3://dns.google/dns-query
 [/hkgreenradio.org/]h3://dns.google/dns-query
 [/hkgpao.com/]h3://dns.google/dns-query
-[/hkheadline.com*blog/]h3://dns.google/dns-query
 [/hkheadline.com/]h3://dns.google/dns-query
 [/hkhkhk.com/]h3://dns.google/dns-query
 [/hkhrc.org.hk/]h3://dns.google/dns-query
@@ -3685,7 +3680,6 @@
 [/madou.club/]h3://dns.google/dns-query
 [/mahjongsoul.com/]h3://dns.google/dns-query
 [/mangabz.com/]h3://dns.google/dns-query
-[/*.m-team.cc/]h3://dns.google/dns-query
 [/macrovpn.com/]h3://dns.google/dns-query
 [/macts.com.tw/]h3://dns.google/dns-query
 [/mad-ar.ch/]h3://dns.google/dns-query
@@ -4319,7 +4313,6 @@
 [/phuquocservices.com/]h3://dns.google/dns-query
 [/picacomiccn.com/]h3://dns.google/dns-query
 [/picidae.net/]h3://dns.google/dns-query
-[/img*.picturedip.com/]h3://dns.google/dns-query
 [/picturesocial.com/]h3://dns.google/dns-query
 [/picuki.com/]h3://dns.google/dns-query
 [/pigav.com/]h3://dns.google/dns-query
@@ -4329,7 +4322,6 @@
 [/pinimg.com/]h3://dns.google/dns-query
 [/pinkrod.com/]h3://dns.google/dns-query
 [/pinoy-n.com/]h3://dns.google/dns-query
-[/pinterest.*/]h3://dns.google/dns-query
 [/pipii.tv/]h3://dns.google/dns-query
 [/piposay.com/]h3://dns.google/dns-query
 [/piraattilahti.org/]h3://dns.google/dns-query
