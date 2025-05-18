@@ -99,11 +99,11 @@ jobs:
           awk 'BEGIN {lastNonEmpty = 0} { lines[NR] = $0; if ($0 ~ /[^[:space:]]/) lastNonEmpty = NR } END { for(i = 1; i <= lastNonEmpty; i++) print lines[i] }' "$OUTFILE" > "$TEMPFILE"
           mv "$TEMPFILE" "$OUTFILE"
           echo "upstreams.txt final size: $(stat -c%s "$OUTFILE") bytes"
-          git config user.name "github-action"
+          git config user.name "Github Action"
           git config user.email "action@github.com"
           if [ -n "$(git status --porcelain "$OUTFILE")" ]; then
             git add "$OUTFILE"
-            git commit -m "Update upstreams.txt [skip ci]"
+            git commit -m "Update upstreams.txt $(date)"
             git push
             echo "Committed update"
           else
