@@ -1,0 +1,111 @@
+name: Update upstreams.txt
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0"
+  push:
+    paths:
+      - ".github/**"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Generate upstreams.txt
+        shell: bash
+        run: |
+          set -e
+          OUTFILE="upstreams.txt"
+          TEMPFILE="upstream.tmp"
+
+          echo "Write default DNS"
+          echo "tls://dns.opendns.com" > "$OUTFILE"
+          echo "upstreams.txt size: $(stat -c%s "$OUTFILE") bytes"
+
+          if [ -f ".github/custom.txt" ]; then
+            echo "Apply custom rules"
+            while IFS= read -r line || [ -n "$line" ]; do
+              [[ -z "$line" || "$line" =~ ^# ]] && continue
+              if [[ "$line" =~ ^- ]]; then
+                rule="${line:1}"
+                grep -Fxv "$rule" "$OUTFILE" > "$TEMPFILE" && mv "$TEMPFILE" "$OUTFILE"
+                echo "Delete: $rule"
+              else
+                echo "$line" >> "$OUTFILE"
+                echo "Add: $line"
+              fi
+            done < ".github/custom.txt"
+          else
+            echo "No custom.txt, skip custom rules"
+          fi
+          echo "upstreams.txt size: $(stat -c%s "$OUTFILE") bytes"
+
+          BASEURL="https://raw.githubusercontent.com/SukkaLab/ruleset.skk.moe/master/Modules/Rules/sukka_local_dns_mapping"
+          for file in alibaba.conf tencent.conf bilibili.conf xiaomi.conf bytedance.conf baidu.conf qihoo360.conf; do
+            url="$BASEURL/$file"
+            curl -s -o "$file" "$url"
+            echo "Downloaded $file ($(stat -c%s "$file") bytes)"
+
+            dns_value="tls://dot.pub"
+            case "$file" in
+              "alibaba.conf")   dns_value="quic://dns.alidns.com" ;;
+              "bytedance.conf") dns_value="180.184.1.1" ;;
+              "baidu.conf")     dns_value="180.76.76.76" ;;
+              "qihoo360.conf")  dns_value="tls://dot.360.cn" ;;
+            esac
+
+            grep -E "^(DOMAIN-SUFFIX,|DOMAIN,)" "$file" | sed -E 's/^(DOMAIN-SUFFIX,|DOMAIN,)//' | sed 's/,$//' | while IFS= read -r line; do
+              [[ "$line" == *skk.moe* ]] && continue
+              domain=$(echo "$line" | xargs)
+              echo "[/$domain/]$dns_value" >> "$OUTFILE"
+            done
+            echo "$file processed, upstreams.txt size: $(stat -c%s "$OUTFILE") bytes"
+          done
+
+          EASYMOS_BASE="https://raw.githubusercontent.com/pmkol/easymosdns/rules"
+          for listfile in cdn_domain_list.txt gfw_domain_list.txt china_domain_list.txt; do
+            url="$EASYMOS_BASE/$listfile"
+            curl -s -o "$listfile" "$url"
+            echo "Downloaded $listfile ($(stat -c%s "$listfile") bytes)"
+            dns_value="tls://dot.pub"
+            case "$listfile" in
+              "gfw_domain_list.txt")   dns_value="tls://dns.opendns.com" ;;
+              "china_domain_list.txt") dns_value="tls://dot.pub" ;;
+            esac
+
+            if [ "$listfile" = "cdn_domain_list.txt" ]; then
+              grep -E "^full:" "$listfile" | sed 's/^full://' | while IFS= read -r dom; do
+                dom=$(echo "$dom" | xargs)
+                echo "[/$dom/]$dns_value" >> "$OUTFILE"
+              done
+            else
+              grep -E "^[^#]" "$listfile" | while IFS= read -r dom; do
+                dom=$(echo "$dom" | xargs)
+                echo "[/$dom/]$dns_value" >> "$OUTFILE"
+              done
+            fi
+            echo "$listfile processed, upstreams.txt size: $(stat -c%s "$OUTFILE") bytes"
+          done
+
+          echo "Deduplicate"
+          awk '!seen[$0]++' "$OUTFILE" > "$TEMPFILE"
+          mv "$TEMPFILE" "$OUTFILE"
+
+          echo "Remove trailing blank lines"
+          awk 'BEGIN {lastNonEmpty = 0} { lines[NR] = $0; if ($0 ~ /[^[:space:]]/) lastNonEmpty = NR } END { for(i = 1; i <= lastNonEmpty; i++) print lines[i] }' "$OUTFILE" > "$TEMPFILE"
+          mv "$TEMPFILE" "$OUTFILE"
+          echo "upstreams.txt final size: $(stat -c%s "$OUTFILE") bytes"
+          git config user.name "github-action"
+          git config user.email "action@github.com"
+          if [ -n "$(git status --porcelain "$OUTFILE")" ]; then
+            git add "$OUTFILE"
+            git commit -m "Update upstreams.txt [skip ci]"
+            git push
+            echo "Committed update"
+          else
+            echo "No changes to commit"
+          fi
